@@ -53,7 +53,7 @@ def normalise_dict_keys(dictionary):
     return new_dict
 
 
-def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool, data_sets: Dict[str, AbstractDataSet]) -> Tuple:
+def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool):
     features_extractor = FaceFeaturesExtractor()
 
     # use augmented dataset if augment is True
@@ -67,10 +67,8 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
     dataset.class_to_idx = normalise_dict_keys(dataset.class_to_idx)
     idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
     labels = list(map(lambda idx: idx_to_class[idx], labels))
-
-    # get the labels_data_set instance from the data_sets
-    labels_data_set = data_sets["labels"]
-    # save labels to the labels_data_set instance
+    
+    labels_data_set = CustomTextDataSet(filepath="data/04_features/labels.txt", fmt="%s")
     labels_data_set.save(np.array(labels, dtype=np.str).reshape(-1, 1))
     return embeddings, labels_data_set, dataset.class_to_idx
 

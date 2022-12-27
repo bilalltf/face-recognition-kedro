@@ -7,14 +7,15 @@ enh_data:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/results.csv
 
-data_sets:
-  embeddings:
-    type: custom_text_data_set.CustomTextDataSet
-    filepath: data/04_feature/embeddings.txt
-  labels:
-    type: custom_text_data_set.CustomTextDataSet
-    filepath: data/04_feature/labels.txt
-    fmt: "%s"
+
+embeddings:
+  type: custom_text_data_set.CustomTextDataSet
+  filepath: data/04_feature/embeddings.txt
+  fmt: "%.18e"
+labels:
+  type: custom_text_data_set.CustomTextDataSet
+  filepath: data/04_feature/labels.txt
+  fmt: "%s"
  
 class_to_idx:
   type: pickle.PickleDataSet
