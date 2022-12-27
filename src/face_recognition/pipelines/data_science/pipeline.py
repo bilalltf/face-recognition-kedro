@@ -15,9 +15,9 @@ def create_pipeline(**kwargs) -> Pipeline:
 
         node(
             func=prepare_embeddings,
-            inputs=["params:train_path", "params:augmented_train_path", "params:augment"],
+            inputs=["params:train_path", "params:augmented_train_path", "params:augment", "data_sets"],
             outputs=["embeddings", "labels", "class_to_idx"],
-            name="prepare_embeddings"
+            name="prepare_embeddings",
         ),
 
         node(
@@ -26,11 +26,11 @@ def create_pipeline(**kwargs) -> Pipeline:
             outputs="model",
             name="train_model"
         ),
-        node(
+       node(
             func=prepare_embeddings,
-            inputs=["params:test_path", "params:test_path", "params:augment"],
+            inputs=["params:test_path", "params:augmented_test_path", "params:augment", "data_sets"],
             outputs=["test_embeddings", "test_labels", "test_class_to_idx"],
-            name="prepare_test_embeddings"
+            name="prepare_test_embeddings",
         ),
         node(
             func=evaluate,

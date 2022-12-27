@@ -3,6 +3,7 @@ This is a boilerplate pipeline 'data_science'
 generated using Kedro 0.18.4
 """
 
+from typing import Dict, Tuple
 import numpy as np
 from kedro.extras.datasets.text import TextDataSet
 from kedro.extras.datasets.pickle import PickleDataSet
@@ -12,6 +13,10 @@ from torchvision import transforms, datasets
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
+from kedro.io import AbstractDataSet
+
+
+from custom_text_data_set import CustomTextDataSet
 from .face_recognition import preprocessing, FaceFeaturesExtractor, FaceRecogniser
 import tqdm
 
@@ -47,7 +52,8 @@ def normalise_dict_keys(dictionary):
         new_dict[normalise_string(key)] = dictionary[key]
     return new_dict
 
-def prepare_embeddings(train_path:str, augmented_train_path:str, augment:bool, **kwargs):
+
+def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool, data_sets: Dict[str, AbstractDataSet]) -> Tuple:
     features_extractor = FaceFeaturesExtractor()
 
     # use augmented dataset if augment is True
@@ -62,7 +68,15 @@ def prepare_embeddings(train_path:str, augmented_train_path:str, augment:bool, *
     idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
     labels = list(map(lambda idx: idx_to_class[idx], labels))
 
-    return embeddings, np.array(labels, dtype=np.str).reshape(-1, 1), dataset.class_to_idx
+    # get the labels_data_set instance from the data_sets
+    labels_data_set = data_sets["labels"]
+    # save labels to the labels_data_set instance
+    labels_data_set.save(np.array(labels, dtype=np.str).reshape(-1, 1))
+    return embeddings, labels_data_set, dataset.class_to_idx
+
+
+
+
 
 
 

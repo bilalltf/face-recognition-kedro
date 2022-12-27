@@ -7,16 +7,15 @@ enh_data:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/results.csv
 
-embeddings:
-  type: custom_text_data_set.CustomTextDataSet
-  filepath: data/04_feature/embeddings.txt
-  fmt: "%.18e"
-
-labels:
-  type: custom_text_data_set.CustomTextDataSet
-  filepath: data/04_feature/labels.txt
-  fmt: "%s"
-
+data_sets:
+  embeddings:
+    type: custom_text_data_set.CustomTextDataSet
+    filepath: data/04_feature/embeddings.txt
+  labels:
+    type: custom_text_data_set.CustomTextDataSet
+    filepath: data/04_feature/labels.txt
+    fmt: "%s"
+ 
 class_to_idx:
   type: pickle.PickleDataSet
   filepath: data/04_feature/class_to_idx.pkl
@@ -25,6 +24,21 @@ class_to_idx:
 output_model:
   type: pickle.PickleDataSet
   filepath: data/06_models/face_recogniser.pkl
+
+test_embeddings:
+  type: custom_text_data_set.CustomTextDataSet
+  filepath: data/04_feature/embeddings.txt
+  fmt: "%.18e"
+
+test_labels:
+  type: custom_text_data_set.CustomTextDataSet
+  filepath: data/04_feature/labels.txt
+  fmt: "%s"
+ 
+test_class_to_idx:
+  type: pickle.PickleDataSet
+  filepath: data/04_feature/class_to_idx.pkl
+
 
 eval:
   type: pandas.CSVDataSet

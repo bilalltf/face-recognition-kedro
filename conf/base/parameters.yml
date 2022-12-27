@@ -1,4 +1,4 @@
-data_path: data/01_raw/data
+data_path: data/01_raw/data_dev
 train_path: data/01_raw/train
 test_path: data/01_raw/test
 augmented_train_path: data/01_raw/augmented_train
