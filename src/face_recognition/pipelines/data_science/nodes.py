@@ -117,8 +117,13 @@ def eval(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextData
     ag=1 if augment else 0
     # define metrics
     print(labels)
-    metrics = evaluate.ModelMetrics(model)
-    report = metrics.calculate_metrics(test_embeddings, labels, target_names=target_names)
+    y_pred = model.classifier.predict(test_embeddings)
+    # Initialize the idx_to_class dictionary and target_names list using the test data
+    idx_to_class = {i: class_name for i, class_name in enumerate(np.unique(labels))}
+    target_names = list(map(lambda i: idx_to_class[i], np.unique(labels)))
+
+    # Generate the classification report
+    report = metrics.classification_report(y, y_pred, target_names=target_names, output_dict=True)
 
     print("Test report:")
     print(f"Accuracy: {report['accuracy']:.3f}")
