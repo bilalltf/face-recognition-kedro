@@ -3,14 +3,19 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
+enh_data:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/results.csv
 
 embeddings:
-  type: text.TextDataSet
+  type: custom_text_data_set.CustomTextDataSet
   filepath: data/04_feature/embeddings.txt
+  fmt: "%.18e"
 
 labels:
-  type: text.TextDataSet
+  type: custom_text_data_set.CustomTextDataSet
   filepath: data/04_feature/labels.txt
+  fmt: "%s"
 
 class_to_idx:
   type: pickle.PickleDataSet
@@ -20,3 +25,7 @@ class_to_idx:
 output_model:
   type: pickle.PickleDataSet
   filepath: data/06_models/face_recogniser.pkl
+
+eval:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/eval.csv
