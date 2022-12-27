@@ -13,9 +13,6 @@ from torchvision import transforms, datasets
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
-from kedro.io import DataCatalog
-from kedro.framework.context import KedroContext
-from custom_text_data_set import CustomTextDataSet
 from .face_recognition import preprocessing, FaceFeaturesExtractor, FaceRecogniser, evaluate
 import tqdm
 
@@ -62,7 +59,7 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
 
     # extract embeddings
     embeddings, labels = dataset_to_embeddings(dataset, features_extractor)
-
+    print(embeddings.shape, len(labels))
     # normalise labels
     dataset.class_to_idx = normalise_dict_keys(dataset.class_to_idx)
     idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
@@ -111,16 +108,18 @@ def eval(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextData
     metrics_dict = {}
 
     labels = test_labels.tolist()
-    idx_to_class = {v: k for k, v in test_class_to_idx.items()}
-    target_names =list( map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0])))
 
+    idx_to_class = {v: k for k, v in test_class_to_idx.items()}
+    target_names =list(map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0])))
+    print(target_names)
     # save the metrics to a csv file
     gs=1 if grid_search else 0
     ag=1 if augment else 0
     # define metrics
-
+    print(labels)
     metrics = evaluate.ModelMetrics(model)
-    report = metrics.calculate_metrics(test_embeddings, labels, target_names)
+    report = metrics.calculate_metrics(test_embeddings, labels, target_names=target_names)
+
     print("Test report:")
     print(f"Accuracy: {report['accuracy']:.3f}")
     print(f"Precision: {report['weighted avg']['precision']:.3f}")

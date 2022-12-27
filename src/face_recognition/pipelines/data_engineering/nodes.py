@@ -10,6 +10,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 import shutil
+from PIL import Image
 
 # split the dataset into train and test, the test set is 20% of the dataset, the total images are in the path data_path, copy 20% of them in the test folder with the path test_path and the rest in the train folder with the path train_path
 # copy the images directly using shutil.copy
@@ -24,8 +25,8 @@ def split_dataset(data_path, train_path, test_path):
     os.mkdir(train_path)
     os.mkdir(test_path)
     subfolders = [f.path for f in os.scandir(data_path) if f.is_dir()]
-    test_images = subfolders[:int(len(subfolders)*0.2)]
-    train_images = subfolders[int(len(subfolders)*0.2):]
+    test_images = subfolders[:int(len(subfolders)*0.5)]
+    train_images = subfolders[int(len(subfolders)*0.5):]
     for f, k in zip(test_images, tqdm(range(len(test_images)))):
         shutil.copytree(f, test_path + "/" +  os.path.split(f)[-1])
         
@@ -50,6 +51,7 @@ def augment_dataset(train_path, augmented_train_path, split_dataset_done):
             save_path = augmented_train_path + "/" + person
 
             image = cv2.imread(img)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             name = save_path+".jpg"
             cv2.imwrite(name, image)
             data.append([name, person])
@@ -71,8 +73,11 @@ def augment_dataset(train_path, augmented_train_path, split_dataset_done):
             noise_types = ["gauss", "s&p", "poisson", "speckle"]
             noise_type = random.choice(noise_types)
             br_ctr_img = noisy(noise_type, br_ctr_img)
+            transformed_image = Image.fromarray((br_ctr_img * 255).astype(np.uint8))
             name = save_path +"_contrastBrightness"+".jpg"
-            cv2.imwrite(name, br_ctr_img)
+            # cv2.imwrite(name, br_ctr_img)
+            transformed_image.save(name, dpi=(600,600), quality=100, subsampling=0)
+
             data.append([name, person])
 
     data = np.array(data)
