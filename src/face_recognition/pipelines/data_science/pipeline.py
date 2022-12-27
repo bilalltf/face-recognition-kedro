@@ -4,11 +4,7 @@ generated using Kedro 0.18.4
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-import numpy as np
-from .nodes import prepare_embeddings, train, evaluate
-from kedro.io import AbstractDataSet, DataSetError
-from typing import Any
-
+from .nodes import *
 
 def create_pipeline(**kwargs) -> Pipeline:
     return pipeline([
@@ -33,7 +29,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             name="prepare_test_embeddings",
         ),
         node(
-            func=evaluate,
+            func=eval,
             inputs=["model", "test_embeddings", "test_labels", "test_class_to_idx", "params:grid_search", "params:augment"],
             outputs="eval",
             name="evaluate_model"

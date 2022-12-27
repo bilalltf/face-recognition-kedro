@@ -39,3 +39,5 @@ class FaceRecogniser:
 
     def __call__(self, img):
         return self.recognise_faces(img)
+
+

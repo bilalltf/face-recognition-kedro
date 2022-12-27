@@ -16,7 +16,7 @@ from sklearn import metrics
 from kedro.io import DataCatalog
 from kedro.framework.context import KedroContext
 from custom_text_data_set import CustomTextDataSet
-from .face_recognition import preprocessing, FaceFeaturesExtractor, FaceRecogniser
+from .face_recognition import preprocessing, FaceFeaturesExtractor, FaceRecogniser, evaluate
 import tqdm
 
 
@@ -96,37 +96,47 @@ def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet
     labels = labels.tolist()
     idx_to_class = {v: k for k, v in class_to_idx.items()}
 
-    target_names = map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0]))
-    print("train accuracy: {}".format(metrics.accuracy_score(labels, clf.predict(embeddings))))
-    print("train precision: {}".format(metrics.precision_score(labels, clf.predict(embeddings), average='weighted')))
-    print("train recall: {}".format(metrics.recall_score(labels, clf.predict(embeddings), average='weighted')))
-    print("train f1: {}".format(metrics.f1_score(labels, clf.predict(embeddings), average='weighted')))
+    target_names = list(map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0])))
+    report = metrics.classification_report(labels, clf.predict(embeddings), target_names=target_names, output_dict=True)
+    print("Training report:")
+    print(f"Accuracy: {report['accuracy']:.3f}")
+    print(f"Precision: {report['weighted avg']['precision']:.3f}")
+    print(f"Recall: {report['weighted avg']['recall']:.3f}")
+    print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
+
 
     return FaceRecogniser(features_extractor, clf, idx_to_class)
 
-def evaluate(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextDataSet, test_class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
+def eval(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextDataSet, test_class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
     metrics_dict = {}
 
     labels = test_labels.tolist()
     idx_to_class = {v: k for k, v in test_class_to_idx.items()}
-    target_names = map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0]))
+    target_names =list( map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0])))
 
     # save the metrics to a csv file
     gs=1 if grid_search else 0
     ag=1 if augment else 0
     # define metrics
 
+    metrics = evaluate.ModelMetrics(model)
+    report = metrics.calculate_metrics(test_embeddings, labels, target_names)
+    print("Test report:")
+    print(f"Accuracy: {report['accuracy']:.3f}")
+    print(f"Precision: {report['weighted avg']['precision']:.3f}")
+    print(f"Recall: {report['weighted avg']['recall']:.3f}")
+    print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
     
     metrics_dict = {
-        'accuracy': metrics.accuracy_score(labels, model.predict(test_embeddings)),
-        'precision': metrics.precision_score(labels, model.predict(test_embeddings), average='weighted'),
-        'recall': metrics.recall_score(labels, model.predict(test_embeddings), average='weighted'),
-        'f1_score': metrics.f1_score(labels, model.predict(test_embeddings), average='weighted'),
+        "Accuracy": f"{report['accuracy']:.3f}",
+        "Precision": f"{report['weighted avg']['precision']:.3f}",
+        "Recall": f"{report['weighted avg']['recall']:.3f}",
+        "F1-score": f"{report['weighted avg']['f1-score']:.3f}",
         'grid_search': gs,
         'augmentation': ag
     }
-    for key, value in metrics_dict.items():
-        print("{}: {}".format(key, value))
+    
+    
     # convert metrics to dataframe
     metrics_df = pd.DataFrame(metrics_dict, index=[0])
     return metrics_df
