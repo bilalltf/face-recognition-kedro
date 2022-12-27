@@ -13,9 +13,8 @@ from torchvision import transforms, datasets
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn import metrics
-from kedro.io import AbstractDataSet
-
-
+from kedro.io import DataCatalog
+from kedro.framework.context import KedroContext
 from custom_text_data_set import CustomTextDataSet
 from .face_recognition import preprocessing, FaceFeaturesExtractor, FaceRecogniser
 import tqdm
@@ -54,6 +53,7 @@ def normalise_dict_keys(dictionary):
 
 
 def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool):
+    print("generating embeddings...")
     features_extractor = FaceFeaturesExtractor()
 
     # use augmented dataset if augment is True
@@ -68,9 +68,7 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
     idx_to_class = {v: k for k, v in dataset.class_to_idx.items()}
     labels = list(map(lambda idx: idx_to_class[idx], labels))
     
-    labels_data_set = CustomTextDataSet(filepath="data/04_features/labels.txt", fmt="%s")
-    labels_data_set.save(np.array(labels, dtype=np.str).reshape(-1, 1))
-    return embeddings, labels_data_set, dataset.class_to_idx
+    return embeddings, np.array(labels, dtype=np.str).reshape(-1, 1), dataset.class_to_idx
 
 
 
@@ -80,6 +78,7 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
 
 
 def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool):
+    print("training model...")
     features_extractor = FaceFeaturesExtractor()
     
     softmax = LogisticRegression(solver='lbfgs', multi_class='multinomial', C=10, max_iter=10000, verbose=1)
@@ -106,7 +105,7 @@ def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet
     return FaceRecogniser(features_extractor, clf, idx_to_class)
 
 def evaluate(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextDataSet, test_class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
-
+    metrics_dict = {}
 
     labels = test_labels.tolist()
     idx_to_class = {v: k for k, v in test_class_to_idx.items()}
@@ -115,8 +114,10 @@ def evaluate(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:Text
     # save the metrics to a csv file
     gs=1 if grid_search else 0
     ag=1 if augment else 0
+    # define metrics
 
-    metrics = {
+    
+    metrics_dict = {
         'accuracy': metrics.accuracy_score(labels, model.predict(test_embeddings)),
         'precision': metrics.precision_score(labels, model.predict(test_embeddings), average='weighted'),
         'recall': metrics.recall_score(labels, model.predict(test_embeddings), average='weighted'),
@@ -124,8 +125,8 @@ def evaluate(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:Text
         'grid_search': gs,
         'augmentation': ag
     }
-    for key, value in metrics.items():
+    for key, value in metrics_dict.items():
         print("{}: {}".format(key, value))
     # convert metrics to dataframe
-    metrics_df = pd.DataFrame(metrics, index=[0])
+    metrics_df = pd.DataFrame(metrics_dict, index=[0])
     return metrics_df
