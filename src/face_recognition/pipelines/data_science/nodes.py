@@ -2,8 +2,7 @@
 This is a boilerplate pipeline 'data_science'
 generated using Kedro 0.18.4
 """
-
-from typing import Dict, Tuple
+import joblib
 import numpy as np
 from kedro.extras.datasets.text import TextDataSet
 from kedro.extras.datasets.pickle import PickleDataSet
@@ -26,7 +25,6 @@ def dataset_to_embeddings(dataset, features_extractor):
     embeddings = []
     labels = []
     for img_path, label in tqdm.tqdm(dataset.samples):
-        # print(img_path)
         _, embedding = features_extractor(transform(Image.open(img_path).convert('RGB')))
         if embedding is None:
             continue
@@ -74,7 +72,7 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
 
 
 
-def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool):
+def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool, model_path):
     print("training model...")
     features_extractor = FaceFeaturesExtractor()
     
@@ -83,12 +81,15 @@ def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet
         clf = GridSearchCV(
             estimator=softmax,
             param_grid={'C': [0.1, 1, 10, 100, 1000]},
+
             cv=3
         )
     else:
         clf = softmax
     clf.fit(embeddings, labels)
-
+    if grid_search:
+        print("Best parameters set found on training set:")
+        print(clf.best_params_)
 
     labels = labels.tolist()
     idx_to_class = {v: k for k, v in class_to_idx.items()}
@@ -101,15 +102,16 @@ def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet
     print(f"Recall: {report['weighted avg']['recall']:.3f}")
     print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
 
+    joblib.dump(FaceRecogniser(features_extractor, clf, idx_to_class), model_path)
 
     return FaceRecogniser(features_extractor, clf, idx_to_class)
 
-def eval(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextDataSet, test_class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
+def eval(model:FaceRecogniser, embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
     metrics_dict = {}
 
-    labels = test_labels.tolist()
+    labels = labels.tolist()
 
-    idx_to_class = {v: k for k, v in test_class_to_idx.items()}
+    idx_to_class = {v: k for k, v in class_to_idx.items()}
     target_names =list(map(lambda i: i[1], sorted(idx_to_class.items(), key=lambda i: i[0])))
     print(target_names)
     # save the metrics to a csv file
@@ -117,25 +119,21 @@ def eval(model:FaceRecogniser, test_embeddings:TextDataSet, test_labels:TextData
     ag=1 if augment else 0
     # define metrics
     print(labels)
-    y_pred = model.classifier.predict(test_embeddings)
-    # Initialize the idx_to_class dictionary and target_names list using the test data
-    idx_to_class = {i: class_name for i, class_name in enumerate(np.unique(labels))}
-    target_names = list(map(lambda i: idx_to_class[i], np.unique(labels)))
-
-    # Generate the classification report
-    report = metrics.classification_report(y, y_pred, target_names=target_names, output_dict=True)
-
+    metrics = evaluate.ModelMetrics(model)
+    report, avg_proba = metrics.calculate_metrics(embeddings, labels, target_names)
     print("Test report:")
     print(f"Accuracy: {report['accuracy']:.3f}")
     print(f"Precision: {report['weighted avg']['precision']:.3f}")
     print(f"Recall: {report['weighted avg']['recall']:.3f}")
     print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
+    print(f"Average confidence: {avg_proba * 100}%")
     
     metrics_dict = {
         "Accuracy": f"{report['accuracy']:.3f}",
         "Precision": f"{report['weighted avg']['precision']:.3f}",
         "Recall": f"{report['weighted avg']['recall']:.3f}",
         "F1-score": f"{report['weighted avg']['f1-score']:.3f}",
+        "Average confidence": f"{avg_proba * 100}%",
         'grid_search': gs,
         'augmentation': ag
     }

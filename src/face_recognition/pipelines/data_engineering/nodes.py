@@ -12,30 +12,26 @@ from tqdm import tqdm
 import shutil
 from PIL import Image
 
-# split the dataset into train and test, the test set is 20% of the dataset, the total images are in the path data_path, copy 20% of them in the test folder with the path test_path and the rest in the train folder with the path train_path
-# copy the images directly using shutil.copy
-# first delete the images in test and train folders if they exist
-
-def split_dataset(data_path, train_path, test_path):
-    print("Splitting dataset...")
-    if os.path.exists(train_path):
-        shutil.rmtree(train_path)
-    if os.path.exists(test_path):
-        shutil.rmtree(test_path)
-    os.mkdir(train_path)
-    os.mkdir(test_path)
-    subfolders = [f.path for f in os.scandir(data_path) if f.is_dir()]
-    test_images = subfolders[:int(len(subfolders)*0.5)]
-    train_images = subfolders[int(len(subfolders)*0.5):]
-    for f, k in zip(test_images, tqdm(range(len(test_images)))):
-        shutil.copytree(f, test_path + "/" +  os.path.split(f)[-1])
+# def split_dataset(data_path, train_path, test_path):
+#     print("Splitting dataset...")
+#     if os.path.exists(train_path):
+#         shutil.rmtree(train_path)
+#     if os.path.exists(test_path):
+#         shutil.rmtree(test_path)
+#     os.mkdir(train_path)
+#     os.mkdir(test_path)
+#     subfolders = [f.path for f in os.scandir(data_path) if f.is_dir()]
+#     test_images = subfolders[:int(len(subfolders)*0.5)]
+#     train_images = subfolders[int(len(subfolders)*0.5):]
+#     for f, k in zip(test_images, tqdm(range(len(test_images)))):
+#         shutil.copytree(f, test_path + "/" +  os.path.split(f)[-1])
         
-    for f, k in zip(train_images, tqdm(range(len(train_images)))):
-        shutil.copytree(f, train_path + "/" +  os.path.split(f)[-1])
-    return True
+#     for f, k in zip(train_images, tqdm(range(len(train_images)))):
+#         shutil.copytree(f, train_path + "/" +  os.path.split(f)[-1])
+#     return True
 
 
-def augment_dataset(train_path, augmented_train_path, split_dataset_done):
+def augment_dataset(train_path, augmented_train_path):
     if os.path.exists(augmented_train_path):
         shutil.rmtree(augmented_train_path)
     os.mkdir(augmented_train_path)
@@ -48,36 +44,36 @@ def augment_dataset(train_path, augmented_train_path, split_dataset_done):
         images = [i.path for i in os.scandir(f) if i.is_file()]
         
         for img in images:
-            save_path = augmented_train_path + "/" + person
+            # create directory for the person
+            if not os.path.exists(augmented_train_path + "/" + person):
+                os.mkdir(augmented_train_path + "/" + person)
+            save_path = augmented_train_path + "/" + person + "/" + person
 
             image = cv2.imread(img)
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            name = save_path+".jpg"
-            cv2.imwrite(name, image)
+            # copy original image to the new folder using shutil
+            name = save_path +".jpg"
+            shutil.copy(img, name)
             data.append([name, person])
-
             random.seed(7)
 
-            #affine
-            affine_trf = A.Affine(always_apply=False, p=1.0, cval=128)
+            # Random affine
+            affine_trf =  A.ShiftScaleRotate(always_apply=True, p=1.0, shift_limit=0.09, scale_limit=1, rotate_limit=(-45, 45), border_mode=0, value=(0, 0, 0), mask_value=None)
             affined_img = affine_trf(image=image)['image']
+            transformed_image = Image.fromarray((affined_img).astype(np.uint8))
             name = save_path +"_affine"+".jpg"
-            cv2.imwrite(name, affined_img)
+            transformed_image.save(name, dpi=(300,300), quality=100, subsampling=0)
             data.append([name, person])
 
-            # contrast+brightness
-            br_ctr = A.ColorJitter(always_apply=False, p=1.0, contrast=0.5, brightness=0.5)
+            # ColorJitter and noise
+            br_ctr = A.ColorJitter(always_apply=False, p=1.0, contrast=0.7, brightness=0.5, hue=0.5, saturation=0.5)
             br_ctr_img = br_ctr(image=image)['image']
             
             # pick a random noise type
-            noise_types = ["gauss", "s&p", "poisson", "speckle"]
-            noise_type = random.choice(noise_types)
-            br_ctr_img = noisy(noise_type, br_ctr_img)
-            transformed_image = Image.fromarray((br_ctr_img * 255).astype(np.uint8))
-            name = save_path +"_contrastBrightness"+".jpg"
-            # cv2.imwrite(name, br_ctr_img)
-            transformed_image.save(name, dpi=(600,600), quality=100, subsampling=0)
-
+            br_ctr_img = noisy("s&p", br_ctr_img)
+            transformed_image = Image.fromarray((br_ctr_img).astype(np.uint8))
+            name = save_path +"_contrastBrightness_noise"+".jpg"
+            transformed_image.save(name, dpi=(300,300), quality=100, subsampling=0)
             data.append([name, person])
 
     data = np.array(data)

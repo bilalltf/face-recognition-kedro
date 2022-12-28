@@ -12,6 +12,8 @@ embeddings:
   type: custom_text_data_set.CustomTextDataSet
   filepath: data/04_feature/embeddings.txt
   fmt: "%.18e"
+
+  
 labels:
   type: custom_text_data_set.CustomTextDataSet
   filepath: data/04_feature/labels.txt
@@ -26,21 +28,9 @@ output_model:
   type: pickle.PickleDataSet
   filepath: data/06_models/face_recogniser.pkl
 
-test_embeddings:
-  type: custom_text_data_set.CustomTextDataSet
-  filepath: data/04_feature/test_embeddings.txt
-  fmt: "%.18e"
-
-test_labels:
-  type: custom_text_data_set.CustomTextDataSet
-  filepath: data/04_feature/test_labels.txt
-  fmt: "%s"
- 
-test_class_to_idx:
-  type: pickle.PickleDataSet
-  filepath: data/04_feature/test_class_to_idx.pkl
-
 
 eval:
   type: pandas.CSVDataSet
   filepath: data/08_reporting/eval.csv
+  save_args:
+    mode: "a"

@@ -1,6 +1,7 @@
-data_path: data/01_raw/data_dev
+data_path: data/01_raw/data
 train_path: data/01_raw/train
 test_path: data/01_raw/test
 augmented_train_path: data/01_raw/augmented_train
+model_path: data/06_models/recognizer_v2.pkl
 grid_search: False
-augment: False
+augment: True

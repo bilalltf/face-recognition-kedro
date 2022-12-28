@@ -11,15 +11,8 @@ def create_pipeline(**kwargs) -> Pipeline:
         # make sure to add the nodes in the right order
 
         node(
-            func = split_dataset,
-            inputs=["params:data_path", "params:train_path", "params:test_path"],
-            outputs="split_dataset_done",
-            name="split_dataset"
-
-        ),
-        node(
             func = augment_dataset,
-            inputs=["params:train_path", "params:augmented_train_path", "split_dataset_done"],
+            inputs=["params:data_path", "params:augmented_train_path"],
             outputs="enh_data",
             name="augment_dataset"
         )
