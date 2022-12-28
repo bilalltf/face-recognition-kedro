@@ -2,7 +2,7 @@
 This is a boilerplate pipeline 'data_science'
 generated using Kedro 0.18.4
 """
-import joblib
+
 import numpy as np
 from kedro.extras.datasets.text import TextDataSet
 from kedro.extras.datasets.pickle import PickleDataSet
@@ -70,9 +70,7 @@ def prepare_embeddings(train_path: str, augmented_train_path: str, augment: bool
 
 
 
-
-
-def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool, model_path):
+def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool):
     print("training model...")
     features_extractor = FaceFeaturesExtractor()
     
@@ -101,9 +99,7 @@ def train(embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet
     print(f"Precision: {report['weighted avg']['precision']:.3f}")
     print(f"Recall: {report['weighted avg']['recall']:.3f}")
     print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
-
-    joblib.dump(FaceRecogniser(features_extractor, clf, idx_to_class), model_path)
-
+    print(f"Average confidence: {report['weighted avg']['support']:.3f}")
     return FaceRecogniser(features_extractor, clf, idx_to_class)
 
 def eval(model:FaceRecogniser, embeddings:TextDataSet, labels:TextDataSet, class_to_idx:PickleDataSet, grid_search:bool, augment:bool):
@@ -120,20 +116,20 @@ def eval(model:FaceRecogniser, embeddings:TextDataSet, labels:TextDataSet, class
     # define metrics
     print(labels)
     metrics = evaluate.ModelMetrics(model)
-    report, avg_proba = metrics.calculate_metrics(embeddings, labels, target_names)
+    report = metrics.calculate_metrics(embeddings, labels, target_names)
     print("Test report:")
     print(f"Accuracy: {report['accuracy']:.3f}")
     print(f"Precision: {report['weighted avg']['precision']:.3f}")
     print(f"Recall: {report['weighted avg']['recall']:.3f}")
     print(f"F1-score: {report['weighted avg']['f1-score']:.3f}")
-    print(f"Average confidence: {avg_proba * 100}%")
-    
+    print(f"Average confidence: {report['weighted avg']['support']:.3f}")
+
     metrics_dict = {
         "Accuracy": f"{report['accuracy']:.3f}",
         "Precision": f"{report['weighted avg']['precision']:.3f}",
         "Recall": f"{report['weighted avg']['recall']:.3f}",
         "F1-score": f"{report['weighted avg']['f1-score']:.3f}",
-        "Average confidence": f"{avg_proba * 100}%",
+        "Average confidence": f"{report['weighted avg']['support']:.3f}%",
         'grid_search': gs,
         'augmentation': ag
     }

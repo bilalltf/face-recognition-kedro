@@ -30,6 +30,37 @@ from PIL import Image
 #         shutil.copytree(f, train_path + "/" +  os.path.split(f)[-1])
 #     return True
 
+def generate_test_set(train_path, test_path):
+    data = []
+    print("generating test dataset...")
+    if os.path.exists(test_path):
+        shutil.rmtree(test_path)
+    os.mkdir(test_path)
+
+    subfolders = [f.path for f in os.scandir(train_path) if f.is_dir()]
+    for f,j in zip(subfolders, tqdm(range(len(subfolders)))):
+        person = path_to_name_no_extension(f)
+        images = [i.path for i in os.scandir(f) if i.is_file()]
+        
+        for img in images:
+            # create directory for the person
+            if not os.path.exists(test_path + "/" + person):
+                os.mkdir(test_path + "/" + person)
+            save_path = test_path + "/" + person + "/" + person
+
+            image = cv2.imread(img)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            # Random affine
+            affine_trf =  A.ShiftScaleRotate(always_apply=True, p=1.0, shift_limit=0.09, scale_limit=0.5, rotate_limit=(-45, -35), border_mode=0, value=(255, 255, 255), mask_value=None)
+            contrast = A.RandomContrast(limit=(0.5, 0.7), p=1.0)
+            affined_img = affine_trf(image=image)['image']
+            cont_image = contrast(image=affined_img)['image']
+            transformed_image = Image.fromarray((cont_image).astype(np.uint8))
+            name = save_path + ".jpg"
+            transformed_image.save(name, dpi=(300,300), quality=100, subsampling=0)
+            data.append([name, person])
+
+
 
 def augment_dataset(train_path, augmented_train_path):
     if os.path.exists(augmented_train_path):
@@ -58,7 +89,7 @@ def augment_dataset(train_path, augmented_train_path):
             random.seed(7)
 
             # Random affine
-            affine_trf =  A.ShiftScaleRotate(always_apply=True, p=1.0, shift_limit=0.09, scale_limit=1, rotate_limit=(-45, 45), border_mode=0, value=(0, 0, 0), mask_value=None)
+            affine_trf =  A.ShiftScaleRotate(always_apply=True, p=1.0, shift_limit=0.09, scale_limit=1, rotate_limit=(35, 45), border_mode=0, value=(0, 0, 0), mask_value=None)
             affined_img = affine_trf(image=image)['image']
             transformed_image = Image.fromarray((affined_img).astype(np.uint8))
             name = save_path +"_affine"+".jpg"
@@ -66,7 +97,7 @@ def augment_dataset(train_path, augmented_train_path):
             data.append([name, person])
 
             # ColorJitter and noise
-            br_ctr = A.ColorJitter(always_apply=False, p=1.0, contrast=0.7, brightness=0.5, hue=0.5, saturation=0.5)
+            br_ctr = A.ColorJitter(always_apply=False, p=1.0, contrast=0.5, brightness=0.5, hue=0.5, saturation=0.5)
             br_ctr_img = br_ctr(image=image)['image']
             
             # pick a random noise type

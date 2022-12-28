@@ -18,17 +18,21 @@ def create_pipeline(**kwargs) -> Pipeline:
 
         node(
             func=train,
-            inputs=["embeddings", "labels", "class_to_idx", "params:grid_search", "params:model_path"],
+            inputs=["embeddings", "labels", "class_to_idx", "params:grid_search"],
             outputs="model",
             name="train_model"
         ),
         node(
+            func=prepare_embeddings,
+            inputs=["params:test_path", "params:test_path", "params:augment"],
+            outputs=["test_embeddings", "test_labels", "test_class_to_idx"],
+            name="prepare_test_embeddings",
+        ),
+        node(
             func=eval,
-            inputs=["model", "embeddings", "labels", "class_to_idx", "params:grid_search", "params:augment"],
+            inputs=["model", "test_embeddings", "test_labels", "test_class_to_idx", "params:grid_search", "params:augment"],
             outputs="eval",
             name="evaluate_model"
-
         )
-
 
     ])

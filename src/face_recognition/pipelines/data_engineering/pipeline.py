@@ -15,5 +15,12 @@ def create_pipeline(**kwargs) -> Pipeline:
             inputs=["params:data_path", "params:augmented_train_path"],
             outputs="enh_data",
             name="augment_dataset"
+        ),
+        node(
+            func = generate_test_set,
+            inputs=["params:data_path", "params:test_path"],
+
+            outputs=None,
+            name="generate_test_set"
         )
     ])
