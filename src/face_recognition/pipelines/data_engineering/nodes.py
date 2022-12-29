@@ -38,7 +38,8 @@ def generate_test_set(train_path, test_path):
     os.mkdir(test_path)
 
     subfolders = [f.path for f in os.scandir(train_path) if f.is_dir()]
-    for f,j in zip(subfolders, tqdm(range(len(subfolders)))):
+    l = int(len(subfolders)*0.5)
+    for f,j in zip(subfolders, tqdm(range(l))):
         person = path_to_name_no_extension(f)
         images = [i.path for i in os.scandir(f) if i.is_file()]
         
